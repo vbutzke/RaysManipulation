@@ -37,6 +37,77 @@ void normalize(glm::vec3& normal) {
 	normal.z = normal.z / length;
 }
 
+bool checkIfZero(float& value) {
+	if (value == 0) {
+		value = 1;
+		return true;
+	}
+	return false;
+}
+
+bool calculateT(float pointC, float originC, float directionC, float& t) {
+	bool wasZero = checkIfZero(directionC);
+	t = (pointC - originC) / directionC;
+	return wasZero;
+}
+
+bool intersect(glm::vec3 rayOr, glm::vec3 iRay, glm::vec3 point) {
+
+	float tx, ty, tz;
+	bool wasDirZeroX, wasDirZeroY, wasDirZeroZ;
+	bool intersect = false;
+
+	wasDirZeroX = calculateT(point.x, rayOr.x, iRay.x, tx);
+	wasDirZeroY = calculateT(point.y, rayOr.y, iRay.y, ty);
+	wasDirZeroZ = calculateT(point.z, rayOr.z, iRay.z, tz);
+
+	if (wasDirZeroX) {
+		if (wasDirZeroY) {
+			if (wasDirZeroZ) {
+				// 0 0 0
+				intersect = ((rayOr.x == point.x) && (rayOr.y == point.y) && (rayOr.z == point.z));
+			}
+			else {
+				// 0 0 !0
+				intersect = ((rayOr.x == point.x) && (rayOr.y == point.y) &&
+							 (tz*iRay.z == point.z - rayOr.z));
+			}
+		}
+		else if (wasDirZeroZ) {
+			//0 !0 0
+			intersect = ((rayOr.x == point.x) && (rayOr.z == point.z) &&
+						 (ty*iRay.y == point.y - rayOr.y));
+		}
+		else {
+			//0 !0 !0
+			intersect = ((rayOr.x == point.x) && (ty == tz));
+		}
+	}
+	else {
+		if (wasDirZeroY) {
+			if (wasDirZeroZ) {
+				//!0, 0, 0
+				intersect = ((rayOr.y == point.y) && (rayOr.z == point.z) &&
+							 (tx*iRay.x == point.x - rayOr.x));
+			}
+			else {
+				//!0, 0, !0
+				intersect = ((rayOr.y == point.y) && (tx == tz));
+			}
+		}
+		else if (wasDirZeroZ) {
+			//!0, !0, 0
+			intersect = ((rayOr.z == point.z) && (tx == ty));
+		}
+		else {
+			//!0, !0, !0
+			intersect = tx == ty == tz;
+		}
+	}
+
+	return intersect;
+}
+
 void shadow() {
 
 }
@@ -109,11 +180,26 @@ void initShaders(GLuint& shaderProgram) {
 	glDeleteShader(fragmentShader);
 }
 
-void bindBuffers(GLuint& VAO, GLuint& reflectVAO, GLuint& refractVAO, GLuint& VBO, GLuint& VBOreflect, GLuint& refractVBO, GLuint& shaderProgram) {
+void bindBuffers(GLuint& VAO, GLuint& reflectVAO, GLuint& refractVAO, GLuint& vVAO, GLuint& VBOv, GLuint& VBO, GLuint& VBOreflect, GLuint& refractVBO, GLuint& shaderProgram) {
 	
 	glm::vec3 rayOr = glm::vec3(-0.5f, -0.5f, 0.0f);
 	glm::vec3 rayDir = glm::vec3(-rayOr.y, rayOr.x, rayOr.z);
-	glm::vec3 intersection = glm::vec3(-0.3f, -0.1f, 0.0f); //intersection point, static for now
+
+	//glm::vec3 rayOr = glm::vec3(-10.0f, 0.0f, 0.0f);
+	//glm::vec3 rayDir = glm::vec3(-rayOr.x, rayOr.y, rayOr.z);
+	//
+	//glm::vec3 iRay = glm::vec3(0.0f, -10.0f, 0.0f);
+	//glm::vec3 iRayDir = glm::vec3(-iRay.x, -iRay.y, iRay.z);
+	//
+	//glm::vec3 intersection1 = glm::vec3(0.8f, 1.0f, 0.0f);
+	//
+	//if (intersect(rayOr, rayDir, intersection1)) {
+	//	printf("HÁ intersecção");
+	//}
+	//else {
+	//	printf("NÃO há intersecção");
+	//}
+	glm::vec3 intersection = glm::vec3(-rayOr.y, rayOr.x, rayOr.z); //intersection point, static for now
 
 	glm::vec3 reflectedDir;
 	reflect(rayOr, rayDir, intersection, reflectedDir);
@@ -121,16 +207,26 @@ void bindBuffers(GLuint& VAO, GLuint& reflectVAO, GLuint& refractVAO, GLuint& VB
 	glm::vec3 refractDir;
 	refract(rayOr, rayDir, intersection, refractDir);
 
+	//GLfloat vertices[] = {
+	//	rayOr.x, rayOr.y, rayOr.z,
+	//	intersection.x, intersection.y, intersection.z
+	//};
+
 	GLfloat vertices[] = {
 		rayOr.x, rayOr.y, rayOr.z,
-		intersection.x, intersection.y, intersection.z
+		rayDir.x, rayDir.y, rayDir.z
 	};
+
+	//GLfloat vRay[] = {
+	//	iRay.x, iRay.y, iRay.z,
+	//	iRayDir.x, iRayDir.y, iRayDir.z
+	//};
 
 	GLfloat reflect[] = {
 		intersection.x, intersection.y, intersection.z,
 		reflectedDir.x, reflectedDir.y, reflectedDir.z
 	};
-
+	
 	GLfloat refract[] = {
 		intersection.x, intersection.y, intersection.z,
 		refractDir.x, refractDir.y, refractDir.z
@@ -146,6 +242,16 @@ void bindBuffers(GLuint& VAO, GLuint& reflectVAO, GLuint& refractVAO, GLuint& VB
 	glBindBuffer(GL_ARRAY_BUFFER, 0);
 	glBindVertexArray(0);
 
+	//glGenVertexArrays(1, &vVAO);
+	//glGenBuffers(1, &VBOv);
+	//glBindVertexArray(vVAO);
+	//glBindBuffer(GL_ARRAY_BUFFER, VBOv);
+	//glBufferData(GL_ARRAY_BUFFER, sizeof(vRay), vRay, GL_STATIC_DRAW);
+	//glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
+	//glEnableVertexAttribArray(0);
+	//glBindBuffer(GL_ARRAY_BUFFER, 0);
+	//glBindVertexArray(0);
+
 	glGenVertexArrays(1, &reflectVAO);
 	glGenBuffers(1, &VBOreflect);
 	glBindVertexArray(reflectVAO);
@@ -154,7 +260,7 @@ void bindBuffers(GLuint& VAO, GLuint& reflectVAO, GLuint& refractVAO, GLuint& VB
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(GLfloat), (GLvoid*)0);
 	glEnableVertexAttribArray(0);
 	glBindVertexArray(0);
-
+	
 	glGenVertexArrays(1, &refractVAO);
 	glGenBuffers(1, &refractVBO);
 	glBindVertexArray(refractVAO);
@@ -168,13 +274,14 @@ void bindBuffers(GLuint& VAO, GLuint& reflectVAO, GLuint& refractVAO, GLuint& VB
 	assert(colorLoc > -1);
 	glUseProgram(shaderProgram);
 	glUniform4f(colorLoc, 1.0f, 0.0f, 1.0f, 1.0f);
+
 }
 
 int main() {
-	GLuint VBO, VBOreflect, VBOrefract, VAO, reflectVAO, refractVAO, shaderProgram;
+	GLuint VBO, VBOreflect, VBOrefract, VBOv, VAO, reflectVAO, refractVAO, vVAO, shaderProgram;
 	GLFWwindow* window = init();
 	initShaders(shaderProgram);
-	bindBuffers(VAO, reflectVAO, refractVAO, VBO, VBOreflect, VBOrefract, shaderProgram);
+	bindBuffers(VAO, reflectVAO, refractVAO, vVAO, VBOv, VBO, VBOreflect, VBOrefract, shaderProgram);
 	
 	while (!glfwWindowShouldClose(window)){
 		glfwPollEvents();
@@ -185,6 +292,10 @@ int main() {
 		glBindVertexArray(VAO);
 		glDrawArrays(GL_LINES, 0, 3);
 		glBindVertexArray(0);
+
+		//glBindVertexArray(vVAO);
+		//glDrawArrays(GL_LINES, 0, 3);
+		//glBindVertexArray(0);
 
 		glBindVertexArray(reflectVAO);
 		glDrawArrays(GL_LINES, 0, 3);
@@ -199,9 +310,11 @@ int main() {
 	glDeleteVertexArrays(1, &VAO);
 	glDeleteVertexArrays(1, &reflectVAO);
 	glDeleteVertexArrays(1, &refractVAO);
+	glDeleteVertexArrays(1, &vVAO);
 	glDeleteBuffers(1, &VBO);
 	glDeleteBuffers(1, &VBOreflect);
 	glDeleteBuffers(1, &VBOrefract);
+	glDeleteBuffers(1, &VBOv);
 	glfwTerminate();
 	return 0;
 }
