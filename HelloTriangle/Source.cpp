@@ -11,7 +11,7 @@ using namespace std;
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 
 //sombra
-//interpolação
+//intersecção quando o objeto é transparente
 
 const GLuint WIDTH = 800, HEIGHT = 600;
 const GLchar* vertexShaderSource = "#version 410\n"
@@ -129,10 +129,6 @@ bool intersect(glm::vec3 rayOr, glm::vec3 iRay, glm::vec3 point) {
 	}
 
 	return intersect;
-}
-
-void shadow() {
-
 }
 
 void reflect(glm::vec3 ray, glm::vec3 rayDir, glm::vec3 intersection, glm::vec3& reflected) {
