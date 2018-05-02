@@ -10,10 +10,8 @@ using namespace std;
 
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mode);
 
-//ponto de intersecção
 //sombra
 //interpolação
-
 
 const GLuint WIDTH = 800, HEIGHT = 600;
 const GLchar* vertexShaderSource = "#version 410\n"
@@ -29,6 +27,31 @@ const GLchar* fragmentShaderSource = "#version 410\n"
 "{\n"
 "color = inputColor;\n"
 "}\n\0";
+
+//void getColorComponents(unsigned int color, unsigned int& r, unsigned int& g, unsigned int& b) {
+//	r = (color & 0xFF000000) >> 24;
+//	g = (color & 0x00FF0000) >> 16;
+//	b = (color & 0x0000FF00) >> 8;
+//}
+//
+//void setColorComponents(unsigned int& color, unsigned int r, unsigned int g, unsigned int b) {
+//	color = 0xFF | (b << 8) | (g << 16) | (r << 24);
+//	//unsigned int colour = 0xFF | (0x00 << 8) | (0xCC << 16) | (0xFF << 24);
+//}
+
+glm::vec3 LerpRGB(glm::vec3 c1, glm::vec3 c2, float t) {
+
+	float newR, newG, newB;
+	glm::vec3 newColor;
+
+	newR = c1.x + (c2.x - c1.x) * t;
+	newG = c1.y + (c2.y - c1.y) * t;
+	newB = c1.z + (c2.z - c1.z) * t;
+
+	newColor = glm::vec3(newR, newG, newB);
+
+	return newColor;
+}
 
 void normalize(glm::vec3& normal) {
 	GLfloat length = sqrt(normal.x*normal.x + normal.y*normal.y + normal.z+normal.z);
@@ -270,10 +293,15 @@ void bindBuffers(GLuint& VAO, GLuint& reflectVAO, GLuint& refractVAO, GLuint& vV
 	glEnableVertexAttribArray(0);
 	glBindVertexArray(0);
 
+	//interpolation test
+	glm::vec3 c1 = glm::vec3(1.0f, 0.0f, 0.0f);
+	glm::vec3 c2 = glm::vec3(0.0f, 1.0f, 0.0f);
+	glm::vec3 color = LerpRGB(c1, c2, 0.2f);
+
 	GLint colorLoc = glGetUniformLocation(shaderProgram, "inputColor");
 	assert(colorLoc > -1);
 	glUseProgram(shaderProgram);
-	glUniform4f(colorLoc, 1.0f, 0.0f, 1.0f, 1.0f);
+	glUniform4f(colorLoc, color.x, color.y, color.z, 1.0f);
 
 }
 
