@@ -44,9 +44,9 @@ glm::vec3 LerpRGB(glm::vec3 c1, glm::vec3 c2, float t) {
 	float newR, newG, newB;
 	glm::vec3 newColor;
 
-	newR = c1.x + (c2.x - c1.x) * t;
-	newG = c1.y + (c2.y - c1.y) * t;
-	newB = c1.z + (c2.z - c1.z) * t;
+	newR = c1.x*t + c2.x*(1 - t);
+	newG = c1.y*t + c2.y*(1 - t); 
+	newB = c1.z*t + c2.z*(1 - t);
 
 	newColor = glm::vec3(newR, newG, newB);
 
@@ -290,8 +290,8 @@ void bindBuffers(GLuint& VAO, GLuint& reflectVAO, GLuint& refractVAO, GLuint& vV
 	glBindVertexArray(0);
 
 	//interpolation test
-	glm::vec3 c1 = glm::vec3(1.0f, 0.0f, 0.0f);
-	glm::vec3 c2 = glm::vec3(0.0f, 1.0f, 0.0f);
+	glm::vec3 c1 = glm::vec3(1.0f, 0.0f, 1.0f);
+	glm::vec3 c2 = glm::vec3(1.0f, 0.0f, 0.0f);
 	glm::vec3 color = LerpRGB(c1, c2, 0.2f);
 
 	GLint colorLoc = glGetUniformLocation(shaderProgram, "inputColor");
